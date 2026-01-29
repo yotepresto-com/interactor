@@ -90,7 +90,7 @@ Interactor provides built-in validation for required context attributes. Use the
 
 #### Required Attributes
 
-Declare required attributes using the `requires` method. If any required attribute is missing (nil), the context will automatically fail before the interactor's `call` method is executed.
+Declare required attributes using the `requires` method. If any required attribute is missing (nil), an `ArgumentError` will be raised before any hooks or the interactor's `call` method is executed. This ensures that required attributes are validated before any `before` hooks can access them.
 
 ```ruby
 class AuthenticateUser
@@ -124,15 +124,15 @@ email          # => "test@example.com"
 
 #### Validation Behavior
 
-If a required attribute is missing, the context fails automatically with error messages:
+If a required attribute is missing, an `ArgumentError` is raised before any hooks or the interactor's `call` method is executed:
 
 ```ruby
-result = AuthenticateUser.call(email: "test@example.com")
-# => #<Interactor::Context email="test@example.com">
-
-result.success?  # => false
-result.errors    # => ["Required attribute password is missing"]
+expect {
+  AuthenticateUser.call(email: "test@example.com")
+}.to raise_error(ArgumentError, "Required attribute password is missing")
 ```
+
+This ensures that required attributes are validated before any `before` hooks can access them, preventing `NoMethodError` exceptions when hooks try to use missing attributes.
 
 You can call `requires` multiple times to add more required attributes:
 

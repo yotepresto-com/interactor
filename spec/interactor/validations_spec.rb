@@ -41,27 +41,26 @@ module Interactor
       end
 
       context "when a required attribute is missing" do
-        it "fails the context with error messages" do
-          result = interactor_class.call(email: "test@example.com")
-          expect(result).to be_a_failure
-          expect(result.errors).to include("Required attribute password is missing")
+        it "raises ArgumentError" do
+          expect {
+            interactor_class.call(email: "test@example.com")
+          }.to raise_error(ArgumentError, "Required attribute password is missing")
         end
       end
 
       context "when multiple required attributes are missing" do
-        it "fails the context with all error messages" do
-          result = interactor_class.call({})
-          expect(result).to be_a_failure
-          expect(result.errors).to include("Required attribute email is missing")
-          expect(result.errors).to include("Required attribute password is missing")
+        it "raises ArgumentError for the first missing attribute" do
+          expect {
+            interactor_class.call({})
+          }.to raise_error(ArgumentError, "Required attribute email is missing")
         end
       end
 
       context "when required attribute is nil" do
-        it "fails the context" do
-          result = interactor_class.call(email: nil, password: "secret")
-          expect(result).to be_a_failure
-          expect(result.errors).to include("Required attribute email is missing")
+        it "raises ArgumentError" do
+          expect {
+            interactor_class.call(email: nil, password: "secret")
+          }.to raise_error(ArgumentError, "Required attribute email is missing")
         end
       end
 

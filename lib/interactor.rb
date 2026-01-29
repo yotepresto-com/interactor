@@ -28,7 +28,8 @@ module Interactor
       attr_reader :context
 
       # Automatically validate required attributes before interactor invocation
-      before :validate_required_attributes
+      # Use unshift to ensure validation runs before any other before hooks
+      before_hooks.unshift(:validate_required_attributes)
     end
   end
 

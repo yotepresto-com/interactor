@@ -37,7 +37,7 @@ module Interactor
       #   # => #<Interactor::Context email="test@example.com" password="secret">
       #
       #   AuthenticateUser.call(email: "test@example.com")
-      #   # => Interactor::Failure: Required attribute password is missing
+      #   # => ArgumentError: Required attribute password is missing
       #
       # Returns nothing.
       def requires(*attributes)
@@ -64,7 +64,7 @@ module Interactor
     # Internal: Validate required attributes before interactor invocation.
     #
     # Returns nothing.
-    # Raises Interactor::Failure if any required attributes are missing.
+    # Raises ArgumentError if any required attributes are missing.
     def validate_required_attributes
       missing = self.class.required_attributes.select do |attr|
         value = context.public_send(attr)
@@ -73,8 +73,9 @@ module Interactor
 
       return if missing.empty?
 
-      error_messages = missing.map { |attr| "Required attribute #{attr} is missing" }
-      context.fail!(errors: error_messages)
+      # Raise ArgumentError for the first missing attribute to match expected behavior
+      missing_attr = missing.first
+      raise ArgumentError, "Required attribute #{missing_attr} is missing"
     end
   end
 end
