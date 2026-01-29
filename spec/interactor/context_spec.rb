@@ -144,11 +144,9 @@ module Interactor
       end
 
       it "makes the context available from the failure" do
-        begin
-          context.fail!
-        rescue Failure => error
-          expect(error.context).to eq(context)
-        end
+        context.fail!
+      rescue Failure => error
+        expect(error.context).to eq(context)
       end
     end
 
@@ -197,6 +195,21 @@ module Interactor
 
       it "is empty by default" do
         expect(context._called).to eq([])
+      end
+    end
+
+    describe "#deconstruct_keys" do
+      let(:context) { Context.build(foo: :bar) }
+
+      let(:deconstructed) { context.deconstruct_keys([:foo, :success, :failure]) }
+
+      it "deconstructs as hash pattern" do
+        expect(deconstructed[:foo]).to eq(:bar)
+      end
+
+      it "includes success and failure" do
+        expect(deconstructed[:success]).to eq(true)
+        expect(deconstructed[:failure]).to eq(false)
       end
     end
   end

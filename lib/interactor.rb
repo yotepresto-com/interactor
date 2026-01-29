@@ -2,6 +2,7 @@ require "interactor/context"
 require "interactor/error"
 require "interactor/hooks"
 require "interactor/organizer"
+require "interactor/validations"
 
 # Public: Interactor methods. Because Interactor is a module, custom Interactor
 # classes should include Interactor rather than inherit from it.
@@ -21,9 +22,13 @@ module Interactor
     base.class_eval do
       extend ClassMethods
       include Hooks
+      include Validations
 
       # Public: Gets the Interactor::Context of the Interactor instance.
       attr_reader :context
+
+      # Automatically validate required attributes before interactor invocation
+      before :validate_required_attributes
     end
   end
 
@@ -113,7 +118,10 @@ module Interactor
   # Returns nothing.
   def run
     run!
-  rescue Failure
+  rescue Failure => e
+    if !context.equal?(e.context)
+      raise
+    end
   end
 
   # Internal: Invoke an Interactor instance along with all defined hooks. The

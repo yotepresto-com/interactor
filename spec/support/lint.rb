@@ -6,7 +6,7 @@ shared_examples :lint do
     let(:instance) { double(:instance, context: context) }
 
     it "calls an instance with the given context" do
-      expect(interactor).to receive(:new).once.with(foo: "bar") { instance }
+      expect(interactor).to receive(:new).once.with({foo: "bar"}) { instance }
       expect(instance).to receive(:run).once.with(no_args)
 
       expect(interactor.call(foo: "bar")).to eq(context)
@@ -25,7 +25,7 @@ shared_examples :lint do
     let(:instance) { double(:instance, context: context) }
 
     it "calls an instance with the given context" do
-      expect(interactor).to receive(:new).once.with(foo: "bar") { instance }
+      expect(interactor).to receive(:new).once.with({foo: "bar"}) { instance }
       expect(instance).to receive(:run!).once.with(no_args)
 
       expect(interactor.call!(foo: "bar")).to eq(context)
@@ -43,7 +43,7 @@ shared_examples :lint do
     let(:context) { double(:context) }
 
     it "initializes a context" do
-      expect(Interactor::Context).to receive(:build).once.with(foo: "bar") { context }
+      expect(Interactor::Context).to receive(:build).once.with({foo: "bar"}) { context }
 
       instance = interactor.new(foo: "bar")
 
@@ -70,12 +70,20 @@ shared_examples :lint do
       instance.run
     end
 
-    it "rescues failure" do
-      expect(instance).to receive(:run!).and_raise(Interactor::Failure)
+    it "rescues failure with the same context" do
+      expect(instance).to receive(:run!).and_raise(Interactor::Failure.new(instance.context))
 
       expect {
         instance.run
       }.not_to raise_error
+    end
+
+    it "raises other failures" do
+      expect(instance).to receive(:run!).and_raise(Interactor::Failure.new(Interactor::Context.new))
+
+      expect {
+        instance.run
+      }.to raise_error(Interactor::Failure)
     end
 
     it "raises other errors" do

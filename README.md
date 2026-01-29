@@ -1,7 +1,7 @@
 # Interactor
 
 [![Gem Version](https://img.shields.io/gem/v/interactor.svg)](http://rubygems.org/gems/interactor)
-[![Build Status](https://img.shields.io/travis/collectiveidea/interactor/master.svg)](https://travis-ci.org/collectiveidea/interactor)
+[![Build Status](https://github.com/collectiveidea/interactor/actions/workflows/tests.yml/badge.svg)](https://github.com/collectiveidea/interactor/actions/workflows/tests.yml)
 [![Maintainability](https://img.shields.io/codeclimate/maintainability/collectiveidea/interactor.svg)](https://codeclimate.com/github/collectiveidea/interactor)
 [![Test Coverage](https://img.shields.io/codeclimate/coverage-letter/collectiveidea/interactor.svg)](https://codeclimate.com/github/collectiveidea/interactor)
 [![Ruby Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://github.com/testdouble/standard)
@@ -80,9 +80,78 @@ context.success? # => false
 
 Normally, however, these exceptions are not seen. In the recommended usage, the controller invokes the interactor using the class method `call`, then checks the `success?` method of the context.
 
-This works because the `call` class method swallows exceptions.  When unit testing an interactor, if calling custom business logic methods directly and bypassing `call`, be aware that `fail!` will generate such exceptions.
+This works because the `call` class method swallows `Interactor::Failure` exceptions. When unit testing an interactor, if calling custom business logic methods directly and bypassing `call`, be aware that `fail!` will generate such exceptions.
 
 See *Interactors in the Controller*, below, for the recommended usage of `call` and `success?`.
+
+### Validations
+
+Interactor provides built-in validation for required context attributes. Use the `requires` class method to declare which attributes must be present when the interactor is invoked.
+
+#### Required Attributes
+
+Declare required attributes using the `requires` method. If any required attribute is missing (nil), the context will automatically fail before the interactor's `call` method is executed.
+
+```ruby
+class AuthenticateUser
+  include Interactor
+
+  requires :email, :password
+
+  def call
+    # email and password are guaranteed to be present
+    if user = User.authenticate(email, password)
+      context.user = user
+      context.token = user.secret_token
+    else
+      context.fail!(message: "authenticate_user.failure")
+    end
+  end
+end
+```
+
+When you declare required attributes, they are automatically delegated to the interactor instance, so you can access them directly without going through `context`:
+
+```ruby
+# Instead of context.email, you can use:
+email      # => "test@example.com"
+password   # => "secret"
+
+# Both work:
+context.email  # => "test@example.com"
+email          # => "test@example.com"
+```
+
+#### Validation Behavior
+
+If a required attribute is missing, the context fails automatically with error messages:
+
+```ruby
+result = AuthenticateUser.call(email: "test@example.com")
+# => #<Interactor::Context email="test@example.com">
+
+result.success?  # => false
+result.errors    # => ["Required attribute password is missing"]
+```
+
+You can call `requires` multiple times to add more required attributes:
+
+```ruby
+class CreateOrder
+  include Interactor
+
+  requires :user
+  requires :items, :shipping_address
+
+  def call
+    # user, items, and shipping_address are all guaranteed to be present
+    order = Order.create(user: user, items: items, address: shipping_address)
+    context.order = order
+  end
+end
+```
+
+**Note:** Validation only checks for `nil` values. Attributes with `false` or empty string values will pass validation.
 
 ### Hooks
 
@@ -225,8 +294,10 @@ Your application could use an interactor to authenticate a user.
 class AuthenticateUser
   include Interactor
 
+  requires :email, :password
+
   def call
-    if user = User.authenticate(context.email, context.password)
+    if user = User.authenticate(email, password)
       context.user = user
       context.token = user.secret_token
     else
@@ -238,7 +309,8 @@ end
 
 To define an interactor, simply create a class that includes the `Interactor`
 module and give it a `call` instance method. The interactor can access its
-`context` from within `call`.
+`context` from within `call`. Optionally, use `requires` to declare which
+context attributes must be present before the interactor runs.
 
 ## Interactors in the Controller
 
@@ -253,7 +325,7 @@ class SessionsController < ApplicationController
       redirect_to user
     else
       flash.now[:message] = "Please try again."
-      render :new
+      render :new, status: :unprocessable_entity
     end
   end
 
@@ -277,7 +349,7 @@ class SessionsController < ApplicationController
       redirect_to result.user
     else
       flash.now[:message] = t(result.message)
-      render :new
+      render :new, status: :unprocessable_entity
     end
   end
 
@@ -382,8 +454,10 @@ A basic interactor is a class that includes `Interactor` and defines `call`.
 class AuthenticateUser
   include Interactor
 
+  requires :email, :password
+
   def call
-    if user = User.authenticate(context.email, context.password)
+    if user = User.authenticate(email, password)
       context.user = user
       context.token = user.secret_token
     else
@@ -394,7 +468,8 @@ end
 ```
 
 Basic interactors are the building blocks. They are your application's
-single-purpose units of work.
+single-purpose units of work. Use `requires` to ensure necessary context
+attributes are present before the interactor runs.
 
 ### Organizers
 
@@ -479,8 +554,10 @@ thing. Take the following interactor:
 class AuthenticateUser
   include Interactor
 
+  requires :email, :password
+
   def call
-    if user = User.authenticate(context.email, context.password)
+    if user = User.authenticate(email, password)
       context.user = user
       context.token = user.secret_token
     else

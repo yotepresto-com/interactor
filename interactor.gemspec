@@ -2,7 +2,7 @@ require "English"
 
 Gem::Specification.new do |spec|
   spec.name = "interactor"
-  spec.version = "3.1.2"
+  spec.version = "3.2.0"
 
   spec.author = "Collective Idea"
   spec.email = "info@collectiveidea.com"
@@ -12,8 +12,8 @@ Gem::Specification.new do |spec|
   spec.license = "MIT"
 
   spec.files = `git ls-files`.split($INPUT_RECORD_SEPARATOR)
-  spec.test_files = spec.files.grep(/^spec/)
 
+  spec.required_ruby_version = ">= 3.1.0"
   spec.add_development_dependency "bundler"
   spec.add_development_dependency "rake"
 end
