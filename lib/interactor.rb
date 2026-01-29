@@ -114,7 +114,7 @@ module Interactor
   def run
     run!
   rescue Failure => e
-    if context.object_id != e.context.object_id
+    if !context.equal?(e.context)
       raise
     end
   end
