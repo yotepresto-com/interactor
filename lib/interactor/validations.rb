@@ -7,6 +7,15 @@ module Interactor
     def self.included(base)
       base.class_eval do
         extend ClassMethods
+
+        # Ensure validation hook is configured in subclasses
+        def self.inherited(subclass)
+          super
+
+          subclass.class_eval do
+            before_hooks.unshift(:validate_required_attributes) unless before_hooks.include?(:validate_required_attributes)
+          end
+        end
       end
     end
 
