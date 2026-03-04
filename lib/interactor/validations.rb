@@ -66,7 +66,7 @@ module Interactor
       #
       # Returns an Array of Symbol attribute names or an empty Array.
       def required_attributes
-        @required_attributes ||= []
+        @required_attributes ||= superclass.respond_to?(:required_attributes) ? superclass.required_attributes.dup : []
       end
     end
 
